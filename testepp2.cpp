@@ -89,7 +89,7 @@ bool Fila<T>::enfileirar(T novo_valor) {
 template <typename T>
 No<T>* Fila<T>::desenfileirar() {
         if (inicio == nullptr) {
-            return false;
+            return nullptr;
         }
         No<T>* i = inicio;
         inicio = inicio->proximo;
@@ -197,7 +197,7 @@ void display_list(list<T> &lst)
 {
     for (auto item_Vertex : lst)
     {
-        cout << item_Vertex.value << ", ";
+        cout << " (" << item_Vertex.value << ", "<< item_Vertex.d << ", "<< item_Vertex.visita << ") ";
     }
     cout << endl;
 }
@@ -214,21 +214,21 @@ void display_GraphAL(GraphAL<T> &g)
 }
 
 template <typename T>
-void BFS(GraphAL<T> &g, Vertex s, Vertex find){
+void BFS(GraphAL<T> &g, Vertex s){
     //percorre cada vertice de g
+    ItemVertex item_Vertex_s{s};
     for (unsigned int v = 0; v < g.get_num_vertices(); v++)
     {
         list<T> lst = g.get_adj(v);
         for (auto item_Vertex : lst)
         {
-            if(item_Vertex != s){
+            if(item_Vertex.value != item_Vertex_s.value){
                 item_Vertex.visita = 0;
                 item_Vertex.d = inf;
                 item_Vertex.predecessor = nullptr;
             }
         }
     }
-    ItemVertex item_Vertex_s{s};
     item_Vertex_s.visita = 1;
     item_Vertex_s.d = 0;
     item_Vertex_s.predecessor = nullptr;
@@ -236,7 +236,9 @@ void BFS(GraphAL<T> &g, Vertex s, Vertex find){
     fila.enfileirar(item_Vertex_s);
     ItemVertex item_Vertex_u{};
     while (fila.inicio != nullptr){
-        item_Vertex_u = fila.desenfileirar();
+        No<T>* teste = fila.desenfileirar();
+        item_Vertex_u = teste->valor; 
+        delete teste;
         list<T> adju = g.get_adj(item_Vertex_u.value); //pq value é vertex
         for (auto v : adju)
         {
@@ -260,6 +262,8 @@ int main()
     cout << "num_edges: " << num_edges << endl;
     GraphAL<ItemVertex> g{num_vertices};
     input_GraphAL(g, num_edges);
+    Vertex s;
+    BFS(g, s);
     display_GraphAL(g);
     return 0;
 }
