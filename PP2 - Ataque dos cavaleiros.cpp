@@ -1,159 +1,171 @@
 #include <iostream>
 #include <vector>
 #include <list>
+#include <limits>
+
+const float inf = std::numeric_limits<float>::infinity();
 
 using namespace std;
 
-// Implementação de um Grafo
-// utilizando lista de adjacência
-
-typedef unsigned int Vertex;
-class ItemVertex
-{
+class Vertex {
 public:
-    unsigned int value;
-    ItemVertex() {}
-    ItemVertex(unsigned int value) : value(value){};
+    
+    int index;
+    char col;
+    int row;
+
+    int cor; //0 branco 1 cinza 2 preto
+    float d;
+    Vertex* pi;
+
+    Vertex(int idx, char c, int r, int cor, float d, Vertex* pi) : index(idx), col(c), row(r), cor(cor), d(d), pi(pi) {}
+    Vertex(int index) :  index(index){}
+};
+
+class Graph {
+public:
+    vector<list<Vertex>> adjacencyList;
+
+    Graph(int size) : adjacencyList(size) {}
+
+    void addEdge(const Vertex& u, const Vertex& v) {
+        adjacencyList[u.index].push_back(v);
+    }
 };
 
 template <typename T>
-class GraphAL
-{
+class Queue {
 private:
-    unsigned int num_vertices;
-    unsigned int num_edges;
-    list<T> *adj;
+    std::list<T> list;
 
 public:
-    GraphAL(unsigned int);
-    ~GraphAL();
-    void add_edge(Vertex, Vertex);
-    void remove_edge(Vertex, Vertex);
-    bool vertex_already_exists(Vertex u, Vertex v);
-    list<T> get_adj(Vertex v) { return adj[v]; }
-    unsigned int get_num_vertices() { return num_vertices; }
-    unsigned int get_num_edges() { return num_edges; }
+    Queue() {}
+    void enqueue(T item) { list.push_back(item); }
+    T dequeue()
+    {
+        if (!list.empty())
+        {
+            T front = list.front();
+            list.pop_front();
+            return front;
+        }
+    }
+    bool isEmpty(){ return list.empty(); }
 };
 
-template <typename T>
-GraphAL<T>::GraphAL(unsigned int num_vertices) : num_vertices(num_vertices)
-{
-    adj = new list<ItemVertex>[num_vertices];
-}
+void createKnightGraph(Graph& graph) {
 
-template <typename T>
-GraphAL<T>::~GraphAL()
-{
-    for (unsigned int u = 0; u < num_vertices; ++u)
-    {
-        adj[u].clear();
-    }
-    delete[] adj;
-    adj = nullptr;
-    num_edges = 0;
-    num_vertices = 0;
-}
+    int lista1[]= {-2, -2, -1, -1, 1, 1, 2, 2};
+    int lista2[]= {-1, 1, -2, 2,-2, 2, -1 , 1};
 
-template <typename T>
-void GraphAL<T>::add_edge(Vertex u, Vertex v)
-{
-    ItemVertex item_Vertex_v{v};
-    ItemVertex item_Vertex_u{u};
-    if (vertex_already_exists(u, v) == false)
-    {
-        adj[u].push_back(item_Vertex_v);
-    }
-    if (vertex_already_exists(v, u) == false)
-    {
-        adj[v].push_back(item_Vertex_u);
-    }
-    num_edges++;
-}
+    for (int row = 1; row <= 8; ++row) {
+        for (int col = 1; col <= 8; ++col) {
+            int uIndex = (row - 1) * 8 + col;
 
-template <typename T>
-void GraphAL<T>::remove_edge(Vertex u, Vertex v)
-{
-    ItemVertex item_Vertex_v{v};
-    ItemVertex item_Vertex_u{u};
-    list<ItemVertex> &lista_u = adj[u];
-    for (auto itr = lista_u.begin(); itr != lista_u.end(); ++itr)
-    {
-        if (itr->value == item_Vertex_v.value)
-        {
-            itr = lista_u.erase(itr);
+            Vertex u(uIndex, 'A' + col - 1, row, 0, inf,nullptr);
+            
+            for (int i = 0; i < 8 ; i+=1) {
+                int newRow = row + lista1[i];
+                int newCol = col + lista2[i];
+
+                if (newRow >= 1 && newRow <= 8 && newCol >= 1 && newCol <= 8) {
+                    int vIndex = (newRow - 1) * 8 + newCol;
+                    Vertex v(vIndex, 'A' + newCol - 1, newRow,0,inf,nullptr);
+                    graph.addEdge(u, v);
+                }
+            }
         }
     }
-    list<ItemVertex> &lista_v = adj[v];
-    for (auto itr2 = lista_v.begin(); itr2 != lista_v.end(); ++itr2)
-    {
-        if (itr2->value == item_Vertex_u.value)
-        {
-            itr2 = lista_v.erase(itr2);
+}
+
+float BFS(Graph& graph, Vertex s, Vertex rei){
+        for (auto& lista : graph.adjacencyList) {
+            //cout << "a";
+            for (auto& vertice : lista) {
+                vertice.cor = 0;
+                vertice.d = inf;
+                vertice.pi = nullptr;
+            }
+        }
+    s.cor = 1;
+    s.d = 0;
+    s.pi = nullptr;
+    for (const Vertex& adjVertex : graph.adjacencyList[rei.index]) {
+        if (s.index == adjVertex.index) {
+            return s.d;
         }
     }
-    num_edges--;
-}
-template <typename T>
-bool GraphAL<T>::vertex_already_exists(Vertex u, Vertex v)
-{
-    ItemVertex item_Vertex_u{u};
-    ItemVertex item_Vertex_v{v};
-    list<ItemVertex> &lista_u = adj[u];
-    for (auto itr = lista_u.begin(); itr != lista_u.end(); ++itr)
-    {
-        if (itr->value == item_Vertex_v.value)
-        {
-            return true;
+    Queue<Vertex> queue;
+    queue.enqueue(s);
+    while (!queue.isEmpty()) {
+        Vertex u = queue.dequeue();
+        for (Vertex& v : graph.adjacencyList[u.index]) {
+            if (v.cor == 0) {
+                v.cor = 1;
+                v.d = u.d + 1;
+                v.pi = &u;
+                queue.enqueue(v);
+                for (const Vertex& adjVertex : graph.adjacencyList[rei.index]) {
+                    if (v.index == adjVertex.index) {
+                        return v.d;
+                    }
+                }
+            }
         }
+        u.cor = 2;
     }
-    return false;
-}
-
-template <typename T>
-void input_GraphAL(GraphAL<T> &g, unsigned int num_edges)
-{
-    Vertex u = 0;
-    Vertex v = 0;
-    for (unsigned int i = 0; i < num_edges; ++i)
-    {
-        cin >> u >> v;
-        g.add_edge(u, v);
-    }
-}
-
-template <typename T>
-void display_list(list<T> &lst)
-{
-    for (auto item_Vertex : lst)
-    {
-        cout << item_Vertex.value << ", ";
-    }
-    cout << endl;
-}
-
-template <typename T>
-void display_GraphAL(GraphAL<T> &g)
-{
-    for (unsigned int v = 0; v < g.get_num_vertices(); v++)
-    {
-        cout << "v[" << v << "]: ";
-        list<T> lst = g.get_adj(v);
-        display_list(lst);
-    }
-}
-
-int main()
-{
-    unsigned int num_vertices = 0;
-    unsigned int num_edges = 0;
-    cin >> num_vertices >> num_edges;
-    cout << "num_vertices: " << num_vertices << endl;
-    cout << "num_edges: " << num_edges << endl;
-    GraphAL<ItemVertex> g{num_vertices};
-    input_GraphAL(g, num_edges);
-    display_GraphAL(g);
-    //g.remove_edge(0,2);
-    //cout<<"removendo..."<<endl;
-    //display_GraphAL(g);
     return 0;
 }
+
+int getindex(const Graph& graph, const char Letra,const char Numero) {
+
+    char col = Letra;
+    col &= ~' ';
+    
+    int row = Numero - '0';
+    
+    int index = (row - 1) * 8 + (col - 'A') + 1;
+    return index;
+}
+
+int main() {
+    Graph knightGraph(65);  
+
+    createKnightGraph(knightGraph);
+
+    int vezes;
+    cin >> vezes;
+
+
+    for (int i = 0; i < vezes; i++) {
+        int cont = 1;
+        int menor_caminho = 64;
+        char entrada[20];
+        for (int i = 0; i < 10; i++) {
+            cin >> entrada[i];
+        }
+    
+        for (int i = 0; i < 8; i += 2) { 
+            int Cavalo = getindex(knightGraph, entrada[i], entrada[i + 1]);
+            int Rei = getindex(knightGraph, entrada[8], entrada[9]);
+            
+            Vertex cavalo(Cavalo);
+            Vertex rei(Rei);
+            float movimentos = BFS(knightGraph, cavalo, rei);
+            if(movimentos < menor_caminho ){
+                menor_caminho = movimentos;
+                cont = 1;
+            }
+            if(movimentos == menor_caminho)
+                cont += 1;
+            
+        }
+        for (int i = 1; i < cont; i += 1) {
+            cout << menor_caminho<< " ";
+        }
+        cout << endl;
+    }
+
+    return 0;
+}
+
